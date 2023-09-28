@@ -2,23 +2,19 @@ import { Sequelize } from "sequelize-typescript";
 import Product from "../../../../domain/product/entity/product";
 import ProductModel from "./product.model";
 import ProductRepository from "./product.repository";
+import { inMemorySequelizeInstance } from "../../../database/sequelizeInstance";
 
 describe("Product repository test", () => {
   let sequileze: Sequelize;
 
   beforeEach(async () => {
-    sequileze = new Sequelize({
-      dialect: "sqlite",
-      storage: ":memory:",
-      logging: false,
-      sync: { force: true },
-    });
+    sequileze = inMemorySequelizeInstance;
     sequileze.addModels([ProductModel]);
     await sequileze.sync();
   });
 
   afterEach(async () => {
-    await sequileze.close();
+    await ProductModel.destroy({ where: {} });
   });
 
   it("should create a product", async () => {

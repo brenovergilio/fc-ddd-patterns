@@ -11,17 +11,13 @@ import ProductRepository from "../../../product/repository/sequelize/product.rep
 import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 import OrderRepository from "./order.repository";
+import { inMemorySequelizeInstance } from "../../../database/sequelizeInstance";
 
 describe("Order repository test", () => {
   let sequelize: Sequelize;
 
   beforeEach(async () => {
-    sequelize = new Sequelize({
-      dialect: "sqlite",
-      storage: ":memory:",
-      logging: false,
-      sync: { force: true },
-    });
+    sequelize = inMemorySequelizeInstance;
 
     sequelize.addModels([
       CustomerModel,
@@ -33,7 +29,10 @@ describe("Order repository test", () => {
   });
 
   afterEach(async () => {
-    await sequelize.close();
+    await OrderItemModel.destroy({ where: {} });
+    await OrderModel.destroy({ where: {} });
+    await ProductModel.destroy({ where: {} });
+    await CustomerModel.destroy({ where: {} });
   });
 
   it("should create a new order", async () => {

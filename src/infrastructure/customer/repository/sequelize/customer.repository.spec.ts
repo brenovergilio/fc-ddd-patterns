@@ -3,24 +3,20 @@ import Customer from "../../../../domain/customer/entity/customer";
 import Address from "../../../../domain/customer/value-object/address";
 import CustomerModel from "./customer.model";
 import CustomerRepository from "./customer.repository";
+import { inMemorySequelizeInstance } from "../../../database/sequelizeInstance";
 
 describe("Customer repository test", () => {
   let sequelize: Sequelize;
 
   beforeEach(async () => {
-    sequelize = new Sequelize({
-      dialect: "sqlite",
-      storage: ":memory:",
-      logging: false,
-      sync: { force: true },
-    });
+    sequelize = inMemorySequelizeInstance;
 
-    await sequelize.addModels([CustomerModel]);
+    sequelize.addModels([CustomerModel]);
     await sequelize.sync();
   });
 
   afterEach(async () => {
-    await sequelize.close();
+    await CustomerModel.destroy({ where: {}, truncate: true });
   });
 
   it("should create a customer", async () => {

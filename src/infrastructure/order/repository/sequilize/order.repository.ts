@@ -1,6 +1,7 @@
 import Order from "../../../../domain/checkout/entity/order";
 import OrderItem from "../../../../domain/checkout/entity/order_item";
 import OrderRepositoryInterface from "../../../../domain/checkout/repository/order-repository.interface";
+import { inMemorySequelizeInstance } from "../../../database/sequelizeInstance";
 import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 
@@ -26,37 +27,44 @@ export default class OrderRepository implements OrderRepositoryInterface {
   }
 
   async update(entity: Order): Promise<void> {
-    await OrderModel.update(
-      {
-        customer_id: entity.customerId,
-        total: entity.total(),
-      },
-      {
-        where: {
-          id: entity.id
+    const transaction = await inMemorySequelizeInstance.transaction();
+    try {
+      await OrderModel.update(
+        {
+          customer_id: entity.customerId,
+          total: entity.total(),
         },
-      },
-    );
+        {
+          where: {
+            id: entity.id
+          },
+        },
+      );
+  
+      if(entity.items?.length) {
+        await OrderItemModel.destroy({
+          where: {
+            order_id: entity.id
+          }
+        });
+  
+        const orderItemsToCreate = 
+          entity.items.map((item) => 
+            ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                product_id: item.productId,
+                quantity: item.quantity,
+                order_id: entity.id,
+            }));
+        
+        await OrderItemModel.bulkCreate(orderItemsToCreate);
+      }
 
-    if(entity.items?.length) {
-      await OrderItemModel.destroy({
-        where: {
-          order_id: entity.id
-        }
-      });
-
-      const orderItemsToCreate = 
-        entity.items.map((item) => 
-          ({
-              id: item.id,
-              name: item.name,
-              price: item.price,
-              product_id: item.productId,
-              quantity: item.quantity,
-              order_id: entity.id,
-          }));
-      
-      await OrderItemModel.bulkCreate(orderItemsToCreate);
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
     }
   }
 
