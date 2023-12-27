@@ -4,6 +4,7 @@ import Address from "../../../../domain/customer/value-object/address";
 import CustomerModel from "./customer.model";
 import CustomerRepository from "./customer.repository";
 import { inMemorySequelizeInstance } from "../../../database/sequelizeInstance";
+import EventDispatcher from "../../../../domain/@shared/event/event-dispatcher";
 
 describe("Customer repository test", () => {
   let sequelize: Sequelize;
@@ -21,7 +22,7 @@ describe("Customer repository test", () => {
 
   it("should create a customer", async () => {
     const customerRepository = new CustomerRepository();
-    const customer = new Customer("123", "Customer 1");
+    const customer = new Customer("123", "Customer 1", new EventDispatcher());
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
     await customerRepository.create(customer);
@@ -42,7 +43,7 @@ describe("Customer repository test", () => {
 
   it("should update a customer", async () => {
     const customerRepository = new CustomerRepository();
-    const customer = new Customer("123", "Customer 1");
+    const customer = new Customer("123", "Customer 1", new EventDispatcher());
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
     await customerRepository.create(customer);
@@ -65,12 +66,15 @@ describe("Customer repository test", () => {
 
   it("should find a customer", async () => {
     const customerRepository = new CustomerRepository();
-    const customer = new Customer("123", "Customer 1");
+    const customer = new Customer("123", "Customer 1", new EventDispatcher());
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
     await customerRepository.create(customer);
 
     const customerResult = await customerRepository.find(customer.id);
+
+    delete customer.eventDispatcher;
+    delete customerResult.eventDispatcher;
 
     expect(customer).toStrictEqual(customerResult);
   });
@@ -85,13 +89,13 @@ describe("Customer repository test", () => {
 
   it("should find all customers", async () => {
     const customerRepository = new CustomerRepository();
-    const customer1 = new Customer("123", "Customer 1");
+    const customer1 = new Customer("123", "Customer 1", new EventDispatcher());
     const address1 = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer1.Address = address1;
     customer1.addRewardPoints(10);
     customer1.activate();
 
-    const customer2 = new Customer("456", "Customer 2");
+    const customer2 = new Customer("456", "Customer 2", new EventDispatcher());
     const address2 = new Address("Street 2", 2, "Zipcode 2", "City 2");
     customer2.Address = address2;
     customer2.addRewardPoints(20);
@@ -100,6 +104,11 @@ describe("Customer repository test", () => {
     await customerRepository.create(customer2);
 
     const customers = await customerRepository.findAll();
+
+    delete customer1.eventDispatcher;
+    delete customer2.eventDispatcher;
+
+    customers.forEach((customer) => delete customer.eventDispatcher);
 
     expect(customers).toHaveLength(2);
     expect(customers).toContainEqual(customer1);
